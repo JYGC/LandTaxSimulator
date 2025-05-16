@@ -1,16 +1,19 @@
 ﻿namespace LandTaxSimulator.UI
 
 open Fun.Blazor
-open System.Reflection
 open LandTaxSimulator.UI.Layout
+open LandTaxSimulator.UI.Pages
+open Fun.Blazor.Router
 
 type Routes() =
     inherit FunComponent()
 
-    override _.Render() = Router'' {
-        AppAssembly(Assembly.GetExecutingAssembly())
-        Found(fun routeData -> RouteView'' {
-            RouteData routeData
-            DefaultLayout typeof<MainLayout>
-        })
-    }
+    override _.Render() = html.inject (fun (hook: IComponentHook) -> fragment {
+        html.route [
+            HomePage.routerView()
+            |> routeCi "/"
+            ProgressiveSquareAreaPage.routerView()
+            |> routeCi "/progressive-square-area"
+        ]
+        |> MainLayout.view
+    })

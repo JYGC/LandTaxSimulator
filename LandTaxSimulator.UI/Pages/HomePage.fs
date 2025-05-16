@@ -1,17 +1,14 @@
 ﻿namespace LandTaxSimulator.UI.Pages
 
-open Microsoft.AspNetCore.Components
 open Fun.Blazor
 open FSharp.Data.Adaptive
 open Microsoft.AspNetCore.Components.Web
 
-[<Route "/">]
-type HomePage() =
-    inherit FunComponent()
-    override _.Render () = fragment {
+module HomePage =
+    let routerView () =  fragment {
         PageTitle'' { "Home" }
         h1 { "Welcome to the Land Tax Simulator" }
-        adaptiview() {
+        adapt {
             let! counter, setCounter = cval(0).WithSetter()
             p {
                 "Counter: "

@@ -7,7 +7,7 @@
 
   <ItemGroup>
     <Compile Include="Layout\MainLayout.fs" />
-    <Compile Include="Pages\ProgressiveSquareArea.fs" />
+    <Compile Include="Pages\ProgressiveSquareAreaPage.fs" />
     <Compile Include="Pages\HomePage.fs" />
     <Compile Include="Routes.fs" />
   </ItemGroup>
