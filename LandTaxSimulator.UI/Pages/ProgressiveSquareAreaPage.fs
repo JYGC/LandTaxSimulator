@@ -2,11 +2,10 @@
 
 open Fun.Blazor
 open Microsoft.AspNetCore.Components.Web
+open LandTaxSimulator.UI.Components
 
 module ProgressiveSquareAreaPage =
     let routerView () = fragment {
-        PageTitle'' { "Progressive Square Area" }
-        h1 { "Progressive Square Area" }
-        p { "This is a placeholder for the Progressive Square Area page." }
-        p { "You can add your content here." }
+        PageTitle'' { "Progressive per Square Meter" }
+        ProgressiveSquareAreaCalculator.view()
     }

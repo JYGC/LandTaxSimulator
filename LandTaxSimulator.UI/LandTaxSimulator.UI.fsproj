@@ -6,6 +6,7 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="Components\ProgressiveSquareAreaCalculator.fs" />
     <Compile Include="Layout\MainLayout.fs" />
     <Compile Include="Pages\ProgressiveSquareAreaPage.fs" />
     <Compile Include="Pages\HomePage.fs" />
@@ -15,12 +16,9 @@
   <ItemGroup>
     <PackageReference Include="Fun.Blazor" Version="4.1.6" />
     <PackageReference Include="Fun.Blazor.Microsoft.Web" Version="9.0.4" />
+    <PackageReference Include="Fun.Blazor.MudBlazor" Version="8.6.0" />
     <PackageReference Include="Microsoft.AspNetCore.Components" Version="9.0.5" />
     <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="9.0.5" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Components\" />
   </ItemGroup>
 
 </Project>
