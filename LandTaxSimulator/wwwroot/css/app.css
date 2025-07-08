@@ -1,0 +1,22 @@
+﻿/* Carbon-like buttons */
+.mud-button-filled.mud-button-filled-primary {
+    letter-spacing: 0.02rem;
+    text-transform: uppercase;
+    font-weight: 100;
+}
+
+/* Carbon-like cards */
+.mud-paper {
+    border-radius: 0;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+/* Carbon-like input fields */
+.mud-input.mud-input-underline:before {
+    border-bottom: 1px solid #525252;
+}
+
+/* Carbon-like tabs */
+.mud-tabs .mud-tab-active {
+    border-bottom: 2px solid #0f62fe;
+}

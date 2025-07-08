@@ -33,45 +33,29 @@ module ProgressiveSquareAreaCalculator =
       (editButtonCallback: _ -> unit)
       (deleteButtonCallback: _ -> unit) = fragment {
         MudItem'' {
-            xs 4
-            sm 4
-            md 4
-            lg 4
-            xl 4
-            bracket.PricePerSqmThreshold
-        }
-        MudItem'' {
-            xs 4
-            sm 4
-            md 4
-            lg 4
-            xl 4
-            bracket.Rate
-        }
-        MudItem'' {
-            xs 2
-            sm 2
-            md 2
-            lg 2
-            xl 2
-            MudButton'' {
-                Color Color.Primary
-                Variant Variant.Outlined
-                OnClick (fun _ -> editButtonCallback ())
-                "Edit"
-            }
-        }
-        MudItem'' {
-            xs 2
-            sm 2
-            md 2
-            lg 2
-            xl 2
-            MudButton'' {
-                Color Color.Primary
-                Variant Variant.Outlined
-                OnClick (fun _ -> deleteButtonCallback ())
-                "Delete"
+            xs 12
+            sm 12
+            md 12
+            lg 12
+            xl 12
+            MudPaper'' {
+                onclick (fun _ -> editButtonCallback ())
+                $"Click to edit"
+                $"PricePerSqmThreshold: {bracket.PricePerSqmThreshold}"
+                $"Rate: {bracket.Rate}"
+                MudItem'' {
+                    xs 2
+                    sm 2
+                    md 2
+                    lg 2
+                    xl 2
+                    MudButton'' {
+                        Color Color.Secondary
+                        Variant Variant.Filled
+                        OnClick (fun _ -> deleteButtonCallback ())
+                        "Delete"
+                    }
+                }
             }
         }
       }
@@ -91,7 +75,7 @@ module ProgressiveSquareAreaCalculator =
                 MudTextField'' {
                     Label "Price per square meters"
                     InputType InputType.Number
-                    Variant Variant.Text
+                    Variant Variant.Filled
                     Value currentBracket.PricePerSqmThreshold
                     ValueChanged (fun e -> setCurrentBracket({ currentBracket with PricePerSqmThreshold = e }))
                 }
@@ -105,7 +89,7 @@ module ProgressiveSquareAreaCalculator =
                 MudTextField'' {
                     Label "Rate"
                     InputType InputType.Number
-                    Variant Variant.Text
+                    Variant Variant.Filled
                     Value currentBracket.Rate
                     ValueChanged (fun e -> setCurrentBracket({ currentBracket with Rate = e }))
                 }
@@ -139,10 +123,10 @@ module ProgressiveSquareAreaCalculator =
                         renderBracketViewRow
                             bracketContainer.Bracket
                             (fun _ ->
-                                replaceElementByIndex
-                                    index
-                                    { bracketContainer with Selected = true }
-                                    bracketContainers
+                                [|
+                                    for index1 in [0..(bracketContainers.Length - 1)] do
+                                        { bracketContainers[index1] with Selected = index1 = index }
+                                |]
                                 |> setBracketContainers
                             )
                             (fun _ ->
