@@ -40,20 +40,49 @@ module ProgressiveSquareAreaCalculator =
             xl 12
             MudPaper'' {
                 onclick (fun _ -> editButtonCallback ())
-                $"Click to edit"
-                $"PricePerSqmThreshold: {bracket.PricePerSqmThreshold}"
-                $"Rate: {bracket.Rate}"
-                MudItem'' {
-                    xs 2
-                    sm 2
-                    md 2
-                    lg 2
-                    xl 2
-                    MudButton'' {
-                        Color Color.Secondary
-                        Variant Variant.Filled
-                        OnClick (fun _ -> deleteButtonCallback ())
-                        "Delete"
+                MudGrid'' {
+                    MudItem'' {
+                        xs 3
+                        sm 3
+                        md 3
+                        lg 3
+                        xl 3
+                        MudText'' {
+                            $"Click to edit"
+                        }
+                    }
+                    MudItem'' {
+                        xs 3
+                        sm 3
+                        md 3
+                        lg 3
+                        xl 3
+                        MudText'' {
+                            $"PricePerSqmThreshold: {bracket.PricePerSqmThreshold}"
+                        }
+                    }
+                    MudItem'' {
+                        xs 3
+                        sm 3
+                        md 3
+                        lg 3
+                        xl 3
+                        MudText'' {
+                            $"Rate: {bracket.Rate}"
+                        }
+                    }
+                    MudItem'' {
+                        xs 3
+                        sm 3
+                        md 3
+                        lg 3
+                        xl 3
+                        MudButton'' {
+                            Color Color.Secondary
+                            Variant Variant.Filled
+                            OnClick (fun _ -> deleteButtonCallback ())
+                            "Delete"
+                        }
                     }
                 }
             }
@@ -62,10 +91,13 @@ module ProgressiveSquareAreaCalculator =
     
     let private renderBracketEditRow
       (bracket: Bracket)
+      (minimumPricePerSqmThreshold: double)
+      (minimumRate: double)
       (saveButtonCallback: Bracket -> unit)
       (editButtonLabel: string) =
+        let currentBracket = cval(bracket)
         adapt {
-            let! currentBracket, setCurrentBracket = cval(bracket).WithSetter()
+            let! currentBracketValue, setCurrentBracketValue = currentBracket.WithSetter()
             MudItem'' {
                 xs 5
                 sm 5
@@ -75,9 +107,14 @@ module ProgressiveSquareAreaCalculator =
                 MudTextField'' {
                     Label "Price per square meters"
                     InputType InputType.Number
+                    step 1
+                    min minimumPricePerSqmThreshold
                     Variant Variant.Filled
-                    Value currentBracket.PricePerSqmThreshold
-                    ValueChanged (fun e -> setCurrentBracket({ currentBracket with PricePerSqmThreshold = e }))
+                    Value currentBracketValue.PricePerSqmThreshold
+                    ValueChanged (fun e -> 
+                        let newValue = if e < minimumPricePerSqmThreshold then minimumPricePerSqmThreshold else e
+                        setCurrentBracketValue({ currentBracketValue with PricePerSqmThreshold = newValue })
+                    )
                 }
             }
             MudItem'' {
@@ -89,9 +126,14 @@ module ProgressiveSquareAreaCalculator =
                 MudTextField'' {
                     Label "Rate"
                     InputType InputType.Number
+                    step 0.01
+                    min minimumRate
                     Variant Variant.Filled
-                    Value currentBracket.Rate
-                    ValueChanged (fun e -> setCurrentBracket({ currentBracket with Rate = e }))
+                    Value currentBracketValue.Rate
+                    ValueChanged (fun e ->
+                        let newValue = if e < minimumRate then minimumRate else e
+                        setCurrentBracketValue({ currentBracketValue with Rate = newValue })
+                    )
                 }
             }
             MudItem'' {
@@ -102,61 +144,79 @@ module ProgressiveSquareAreaCalculator =
                 xl 2
                 MudButton'' {
                     Color Color.Primary
-                    Variant Variant.Outlined
-                    OnClick (fun _ -> saveButtonCallback(currentBracket))
+                    Variant Variant.Filled
+                    OnClick (fun _ -> saveButtonCallback(currentBracketValue))
                     editButtonLabel
                 }
             }
         }
 
-    let view () = adapt {
-        let! bracketContainers, setBracketContainers = cval<BracketContainer array>([|
+    let view () = 
+        let bracketContainers = cval<BracketContainer array>([|
             { Bracket = { PricePerSqmThreshold = 0; Rate = 0.00 }; Selected = false };
-            { Bracket = { PricePerSqmThreshold = 1; Rate = 0.01 }; Selected = false } |]).WithSetter()
+            { Bracket = { PricePerSqmThreshold = 1; Rate = 0.01 }; Selected = false } |])
+        adapt {
+            let! bracketContainersValue, setBracketContainersValue = bracketContainers.WithSetter()
 
-        MudGrid'' {
-            fragment {
-                for index in [0..(bracketContainers.Length - 1)] ->
-                    let bracketContainer = bracketContainers[index]
-                    match bracketContainer.Selected with
-                    | false ->
-                        renderBracketViewRow
-                            bracketContainer.Bracket
-                            (fun _ ->
-                                [|
-                                    for index1 in [0..(bracketContainers.Length - 1)] do
-                                        { bracketContainers[index1] with Selected = index1 = index }
-                                |]
-                                |> setBracketContainers
-                            )
-                            (fun _ ->
-                                removeElementByIndex index bracketContainers
-                                |> setBracketContainers
-                            )
-                    | true ->
-                        renderBracketEditRow
-                            bracketContainer.Bracket
-                            (fun changedBracket ->
-                                replaceElementByIndex
-                                    index
-                                    changedBracket
-                                    (bracketContainers |> Array.map (fun bc -> bc.Bracket))
-                                |> Array.map (fun b -> { Bracket = b; Selected = false })
-                                |> setBracketContainers
-                            )
-                            "Save"
+            MudGrid'' {
+                fragment {
+                    for index in [0..(bracketContainersValue.Length - 1)] ->
+                        let bracketContainer = bracketContainersValue[index]
+                        match bracketContainer.Selected with
+                        | false ->
+                            renderBracketViewRow
+                                bracketContainer.Bracket
+                                (fun _ ->
+                                    [|
+                                        for index1 in [0..(bracketContainersValue.Length - 1)] do
+                                            { bracketContainersValue[index1] with Selected = index1 = index }
+                                    |]
+                                    |> setBracketContainersValue
+                                )
+                                (fun _ ->
+                                    removeElementByIndex index bracketContainersValue
+                                    |> setBracketContainersValue
+                                )
+                        | true ->
+                            let (minimumPricePerSqmThreshold, minimumRate) =
+                                match index with
+                                | 0 -> (0.00, 0.00)
+                                | _ -> (bracketContainersValue[index - 1].Bracket.PricePerSqmThreshold + 1.00, bracketContainersValue[index - 1].Bracket.Rate + 0.01)
+
+                            renderBracketEditRow
+                                bracketContainer.Bracket
+                                minimumPricePerSqmThreshold
+                                minimumRate
+                                (fun changedBracket ->
+                                    replaceElementByIndex
+                                        index
+                                        changedBracket
+                                        (bracketContainersValue |> Array.map (fun bc -> bc.Bracket))
+                                    |> Array.map (fun b -> { Bracket = b; Selected = false })
+                                    |> setBracketContainersValue
+                                )
+                                "Save"
+                }
+                hr {}
+                let (minimumPricePerSqmThreshold, minimumRate) =
+                    match bracketContainersValue.Length with
+                    | 0 -> (0.00, 0.00)
+                    | _ -> (
+                        bracketContainersValue[bracketContainersValue.Length - 1].Bracket.PricePerSqmThreshold + 1.00,
+                        bracketContainersValue[bracketContainersValue.Length - 1].Bracket.Rate + 0.01
+                    )
+                renderBracketEditRow
+                    { PricePerSqmThreshold = minimumPricePerSqmThreshold; Rate = minimumRate }
+                    minimumPricePerSqmThreshold
+                    minimumRate
+                    (fun newBracket ->
+                        Array.concat [ bracketContainersValue; [| { Bracket = newBracket; Selected = false } |] ]
+                        |> setBracketContainersValue
+                    )
+                    "Add"
             }
-            hr {}
-            renderBracketEditRow
-                { PricePerSqmThreshold = 0; Rate = 0.00 }
-                (fun newBracket ->
-                    Array.concat [ bracketContainers; [| { Bracket = newBracket; Selected = false } |] ]
-                    |> setBracketContainers
-                )
-                "Add"
-        }
 
-        for bracketContainer in bracketContainers do
-            p { $"PricePerSqmThreshold:{bracketContainer.Bracket.PricePerSqmThreshold} Rate:{bracketContainer.Bracket.Rate}" }
-    }
+            for bracketContainer in bracketContainersValue do
+                p { $"PricePerSqmThreshold:{bracketContainer.Bracket.PricePerSqmThreshold} Rate:{bracketContainer.Bracket.Rate}" }
+        }
 

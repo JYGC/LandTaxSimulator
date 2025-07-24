@@ -30,6 +30,7 @@ type Routes() =
         html.route [
             HomePage.routerView() |> routeCi "/"
             ProgressiveSquareAreaPage.routerView() |> routeCi "/progressive-square-area"
+            AvalePage.routerView() |> routeCi "/avale"
         ]
         |> MainLayout.view
     })

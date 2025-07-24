@@ -8,6 +8,7 @@
   <ItemGroup>
     <Compile Include="Components\ProgressiveSquareAreaCalculator.fs" />
     <Compile Include="Layout\MainLayout.fs" />
+    <Compile Include="Pages\AvalePage.fs" />
     <Compile Include="Pages\ProgressiveSquareAreaPage.fs" />
     <Compile Include="Pages\HomePage.fs" />
     <Compile Include="Routes.fs" />
