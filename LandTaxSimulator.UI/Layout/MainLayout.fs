@@ -1,6 +1,5 @@
 ﻿namespace LandTaxSimulator.UI.Layout
 
-open Microsoft.AspNetCore.Components
 open Fun.Blazor
 open MudBlazor
 
@@ -10,11 +9,11 @@ module MainLayout =
             MudGrid''{
                 height "100%"
                 MudItem'' {
-                    xs 3
-                    sm 3
-                    md 3
-                    lg 3
-                    xl 3
+                    xs 2
+                    sm 2
+                    md 2
+                    lg 2
+                    xl 2
                     MudPaper''{
                         class' "pa-2"
                         MudNavMenu'' {
@@ -34,11 +33,11 @@ module MainLayout =
                     }
                 }
                 MudItem'' {
-                    xs 9
-                    sm 9
-                    md 9
-                    lg 9
-                    xl 9
+                    xs 10
+                    sm 10
+                    md 10
+                    lg 10
+                    xl 10
                     body
                 }
             }

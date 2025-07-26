@@ -1,5 +1,6 @@
 ﻿namespace LandTaxSimulator.UI.Components
 
+open System
 open FSharp.Data.Adaptive
 open Fun.Blazor
 open MudBlazor
@@ -29,194 +30,317 @@ module ProgressiveSquareAreaCalculator =
         ]
 
     let private renderBracketViewRow
-      (bracket: Bracket)
-      (editButtonCallback: _ -> unit)
-      (deleteButtonCallback: _ -> unit) = fragment {
-        MudItem'' {
-            xs 12
-            sm 12
-            md 12
-            lg 12
-            xl 12
-            MudPaper'' {
-                onclick (fun _ -> editButtonCallback ())
-                MudGrid'' {
-                    MudItem'' {
-                        xs 3
-                        sm 3
-                        md 3
-                        lg 3
-                        xl 3
-                        MudText'' {
-                            $"Click to edit"
-                        }
-                    }
-                    MudItem'' {
-                        xs 3
-                        sm 3
-                        md 3
-                        lg 3
-                        xl 3
-                        MudText'' {
-                            $"PricePerSqmThreshold: {bracket.PricePerSqmThreshold}"
-                        }
-                    }
-                    MudItem'' {
-                        xs 3
-                        sm 3
-                        md 3
-                        lg 3
-                        xl 3
-                        MudText'' {
-                            $"Rate: {bracket.Rate}"
-                        }
-                    }
-                    MudItem'' {
-                        xs 3
-                        sm 3
-                        md 3
-                        lg 3
-                        xl 3
-                        MudButton'' {
-                            Color Color.Secondary
-                            Variant Variant.Filled
-                            OnClick (fun _ -> deleteButtonCallback ())
-                            "Delete"
-                        }
-                    }
+      (currentBracket: Bracket)
+      (deleteButtonCallback: Bracket -> unit) =
+        fragment {
+            MudTd'' {
+                DataLabel "PricePerSqmThreshold"
+                MudText'' {
+                    currentBracket.PricePerSqmThreshold
+                }
+            }
+            MudTd'' {
+                DataLabel "Rate"
+                MudText'' {
+                    currentBracket.Rate
+                }
+            }
+            MudTd'' {
+                MudButton'' {
+                    Color Color.Secondary
+                    Variant Variant.Filled
+                    OnClick (fun _ -> deleteButtonCallback currentBracket)
+                    "Delete"
                 }
             }
         }
-      }
     
     let private renderBracketEditRow
-      (bracket: Bracket)
-      (minimumPricePerSqmThreshold: double)
-      (minimumRate: double)
-      (saveButtonCallback: Bracket -> unit)
+      (currentBracketValue: Bracket)
+      (setCurrentBracketValuePricePerSqmThreshold: double -> unit)
+      (setCurrentBracketValueRate: double -> unit)
+      (endEditButtonCallback: _ -> unit)
       (editButtonLabel: string) =
-        let currentBracket = cval(bracket)
-        adapt {
-            let! currentBracketValue, setCurrentBracketValue = currentBracket.WithSetter()
-            MudItem'' {
-                xs 5
-                sm 5
-                md 5
-                lg 5
-                xl 5
+        fragment {
+            MudTd'' {
+                DataLabel "PricePerSqmThreshold"
                 MudTextField'' {
                     Label "Price per square meters"
                     InputType InputType.Number
-                    step 1
-                    min minimumPricePerSqmThreshold
+                    step 10
                     Variant Variant.Filled
                     Value currentBracketValue.PricePerSqmThreshold
-                    ValueChanged (fun e -> 
-                        let newValue = if e < minimumPricePerSqmThreshold then minimumPricePerSqmThreshold else e
-                        setCurrentBracketValue({ currentBracketValue with PricePerSqmThreshold = newValue })
-                    )
+                    ValueChanged setCurrentBracketValuePricePerSqmThreshold
                 }
             }
-            MudItem'' {
-                xs 5
-                sm 5
-                md 5
-                lg 5
-                xl 5
+            MudTd'' {
+                DataLabel "Rate"
                 MudTextField'' {
                     Label "Rate"
                     InputType InputType.Number
                     step 0.01
-                    min minimumRate
                     Variant Variant.Filled
                     Value currentBracketValue.Rate
-                    ValueChanged (fun e ->
-                        let newValue = if e < minimumRate then minimumRate else e
-                        setCurrentBracketValue({ currentBracketValue with Rate = newValue })
-                    )
+                    ValueChanged setCurrentBracketValueRate
                 }
             }
-            MudItem'' {
-                xs 2
-                sm 2
-                md 2
-                lg 2
-                xl 2
+            MudTd'' {
                 MudButton'' {
                     Color Color.Primary
                     Variant Variant.Filled
-                    OnClick (fun _ -> saveButtonCallback(currentBracketValue))
+                    OnClick endEditButtonCallback
                     editButtonLabel
                 }
             }
         }
 
+    let rec private calculateTaxPerSqmOverBracketFloor
+      (indexWithBrackets: (int * Bracket) array)
+      (currentIndex: int)
+      (costPerSqmOverBracket: float) =
+        let currentBracket = snd indexWithBrackets[currentIndex]
+        let sizeBetweenCurrentAndNextBracketOption =
+            (
+                match currentIndex with
+                | v when v < indexWithBrackets.Length - 1 ->
+                    indexWithBrackets[currentIndex + 1] |> snd |> Some
+                | _ -> None
+            )
+            |> Option.bind (fun nb -> Some (nb.PricePerSqmThreshold - currentBracket.PricePerSqmThreshold))
+        let isCurrentBracketFilled =
+            match sizeBetweenCurrentAndNextBracketOption with
+            | Some size -> size <= costPerSqmOverBracket
+            | None -> false
+        
+        match (sizeBetweenCurrentAndNextBracketOption, isCurrentBracketFilled) with
+        | (Some size, true) ->
+            (currentBracket.Rate * 0.01 * size) + (
+                calculateTaxPerSqmOverBracketFloor
+                    indexWithBrackets
+                    (currentIndex + 1)
+                    (costPerSqmOverBracket - size)
+            )
+        | _ -> currentBracket.Rate * 0.01 * costPerSqmOverBracket
+
+    let private calculateTaxPerSqm
+      (indexWithBrackets: (int * Bracket) array)
+      (costPerSqm: float) =
+        let firstBracketOption =
+            match indexWithBrackets.Length with
+            | 0 -> None
+            | _ -> indexWithBrackets[0] |> snd |> Some
+        let isCostPerSqmPassFirstBracket =
+            match firstBracketOption with
+            | Some firstBracket -> costPerSqm >= firstBracket.PricePerSqmThreshold
+            | None -> false
+        match (firstBracketOption, isCostPerSqmPassFirstBracket) with
+        | (Some firstBracket, true) ->
+            calculateTaxPerSqmOverBracketFloor
+                indexWithBrackets
+                0
+                (costPerSqm - firstBracket.PricePerSqmThreshold)
+        | _ ->
+            0.00
+
     let view () = 
-        let bracketContainers = cval<BracketContainer array>([|
-            { Bracket = { PricePerSqmThreshold = 0; Rate = 0.00 }; Selected = false };
-            { Bracket = { PricePerSqmThreshold = 1; Rate = 0.01 }; Selected = false } |])
+        let indexWithBrackets =
+            [|
+                { PricePerSqmThreshold = 500; Rate = 0.50 };
+                { PricePerSqmThreshold = 1000; Rate = 1.00 };
+                { PricePerSqmThreshold = 2000; Rate = 2.25 };
+                { PricePerSqmThreshold = 5000; Rate = 5.00 };
+                { PricePerSqmThreshold = 8000; Rate = 7.50 };
+                { PricePerSqmThreshold = 12000; Rate = 10.00 }
+            |]
+            |> Array.indexed
+            |> cval<(int * Bracket) array>
+        let selectedIndexOption = cval<int option> None
+        let landSize = cval<float> 500.00
+        let landCost = cval<float> 800000.00
+
         adapt {
-            let! bracketContainersValue, setBracketContainersValue = bracketContainers.WithSetter()
+            let! selectedIndexOptionValue, setSelectedIndexOptionValue = selectedIndexOption.WithSetter()
+            let! indexWithBracketsValue, setIndexWithBracketsValue = indexWithBrackets.WithSetter()
+
+            let minimumNewPricePerSqmThreshold, minimumNewRate =
+                match indexWithBracketsValue.Length with
+                | 0 -> (0.00, 0.00)
+                | _ ->
+                    indexWithBracketsValue
+                    |> Array.last
+                    |> snd
+                    |> fun b -> (
+                        (if b.PricePerSqmThreshold = 0 then 0.01 else b.PricePerSqmThreshold + 0.01),
+                        (if b.Rate = 0 then 0.01 else b.Rate + 0.01)
+                    )
+
+            let! newBracketValue, setNewBracketValue =
+                (
+                    {
+                        PricePerSqmThreshold = minimumNewPricePerSqmThreshold;
+                        Rate = minimumNewRate
+                    }
+                    |> cval<Bracket>
+                ).WithSetter()
+
+            let! landSizeValue, setLandSizeValue = landSize.WithSetter()
+            let! landCostValue, setLandCostValue = landCost.WithSetter()
 
             MudGrid'' {
-                fragment {
-                    for index in [0..(bracketContainersValue.Length - 1)] ->
-                        let bracketContainer = bracketContainersValue[index]
-                        match bracketContainer.Selected with
-                        | false ->
-                            renderBracketViewRow
-                                bracketContainer.Bracket
-                                (fun _ ->
-                                    [|
-                                        for index1 in [0..(bracketContainersValue.Length - 1)] do
-                                            { bracketContainersValue[index1] with Selected = index1 = index }
-                                    |]
-                                    |> setBracketContainersValue
-                                )
-                                (fun _ ->
-                                    removeElementByIndex index bracketContainersValue
-                                    |> setBracketContainersValue
-                                )
-                        | true ->
-                            let (minimumPricePerSqmThreshold, minimumRate) =
-                                match index with
-                                | 0 -> (0.00, 0.00)
-                                | _ -> (bracketContainersValue[index - 1].Bracket.PricePerSqmThreshold + 1.00, bracketContainersValue[index - 1].Bracket.Rate + 0.01)
-
+                MudItem'' {
+                    xs 6
+                    sm 6
+                    md 6
+                    lg 6
+                    xl 6
+                    MudTable'' {
+                        Items indexWithBracketsValue
+                        OnRowClick (fun selectedRow -> selectedRow.Item |> fst |> Some |> setSelectedIndexOptionValue)
+                        HeaderContent (seq {
+                            MudTh'' {
+                                "Price per square meters threshold"
+                            }
+                            MudTh'' {
+                                "Rate"
+                            }
+                            MudTh'' {
+                                "Actions"
+                            }
+                        })
+                        RowTemplate (fun context ->
+                            let currentIndex, currentBracket = context
+                            match selectedIndexOptionValue with
+                            | Some selectedIndex when selectedIndex = currentIndex ->
+                                let minimumPricePerSqmThreshold, minimumRate =
+                                    match currentIndex with
+                                    | 0 -> (0.00, 0.00)
+                                    | _ ->
+                                        let _, previousBracket = indexWithBracketsValue[currentIndex - 1]
+                                        (previousBracket.PricePerSqmThreshold + 1.00, previousBracket.Rate + 0.01)
+                                let maximumPricePerSqmThreshold, maximumRate =
+                                    match currentIndex with
+                                    | v when v = indexWithBracketsValue.Length - 1 -> (None, None)
+                                    | v ->
+                                        let _, nextBracket = indexWithBracketsValue[v + 1]
+                                        (
+                                            Some (nextBracket.PricePerSqmThreshold - 1.00),
+                                            Some (nextBracket.Rate - 0.01)
+                                        )
+                                renderBracketEditRow
+                                    currentBracket
+                                    (fun inputFromField ->
+                                        let newValue =
+                                            match inputFromField with
+                                            | v when v < minimumPricePerSqmThreshold -> minimumPricePerSqmThreshold
+                                            | v when maximumPricePerSqmThreshold.IsSome &&
+                                              v > maximumPricePerSqmThreshold.Value ->
+                                                maximumPricePerSqmThreshold.Value
+                                            | v -> v
+                                        let changedBracket = { currentBracket with PricePerSqmThreshold = newValue }
+                                        indexWithBracketsValue
+                                        |> Array.map (fun ib -> snd ib)
+                                        |> replaceElementByIndex currentIndex changedBracket
+                                        |> Array.indexed
+                                        |> setIndexWithBracketsValue
+                                    )
+                                    (fun inputFromField ->
+                                        let newValue =
+                                            match inputFromField with
+                                            | v when v < minimumRate -> minimumRate
+                                            | v when maximumRate.IsSome && v > maximumRate.Value -> maximumRate.Value
+                                            | v -> v
+                                        let changedBracket = { currentBracket with Rate = newValue }
+                                        indexWithBracketsValue
+                                        |> Array.map (fun ib -> snd ib)
+                                        |> replaceElementByIndex currentIndex changedBracket
+                                        |> Array.indexed
+                                        |> setIndexWithBracketsValue
+                                    )
+                                    (fun _ -> setSelectedIndexOptionValue None)
+                                    "Stop Editing"
+                            | _ ->
+                                renderBracketViewRow
+                                    currentBracket
+                                    (fun _ ->
+                                        removeElementByIndex currentIndex indexWithBracketsValue
+                                        |> Array.map (fun ib -> snd ib)
+                                        |> Array.indexed
+                                        |> setIndexWithBracketsValue
+                                    )
+                        )
+                        FooterContent (seq {
                             renderBracketEditRow
-                                bracketContainer.Bracket
-                                minimumPricePerSqmThreshold
-                                minimumRate
-                                (fun changedBracket ->
-                                    replaceElementByIndex
-                                        index
-                                        changedBracket
-                                        (bracketContainersValue |> Array.map (fun bc -> bc.Bracket))
-                                    |> Array.map (fun b -> { Bracket = b; Selected = false })
-                                    |> setBracketContainersValue
+                                newBracketValue
+                                (fun inputFromField ->
+                                    let newValue =
+                                        match inputFromField with
+                                        | v when v < minimumNewPricePerSqmThreshold -> minimumNewPricePerSqmThreshold
+                                        | v -> v
+                                    setNewBracketValue { newBracketValue with PricePerSqmThreshold = newValue }
                                 )
-                                "Save"
+                                (fun inputFromField ->
+                                    let newValue =
+                                        match inputFromField with
+                                        | v when v < minimumNewRate -> minimumNewRate
+                                        | v -> v
+                                    setNewBracketValue { newBracketValue with Rate = newValue }
+                                )
+                                (fun _ ->
+                                    indexWithBracketsValue
+                                    |> Array.map (fun ib -> snd ib)
+                                    |> (fun brackets -> Array.concat [ brackets; [| newBracketValue |] ])
+                                    |> Array.indexed
+                                    |> setIndexWithBracketsValue
+                                )
+                                "Add"
+                        })
+                    }
                 }
-                hr {}
-                let (minimumPricePerSqmThreshold, minimumRate) =
-                    match bracketContainersValue.Length with
-                    | 0 -> (0.00, 0.00)
-                    | _ -> (
-                        bracketContainersValue[bracketContainersValue.Length - 1].Bracket.PricePerSqmThreshold + 1.00,
-                        bracketContainersValue[bracketContainersValue.Length - 1].Bracket.Rate + 0.01
-                    )
-                renderBracketEditRow
-                    { PricePerSqmThreshold = minimumPricePerSqmThreshold; Rate = minimumRate }
-                    minimumPricePerSqmThreshold
-                    minimumRate
-                    (fun newBracket ->
-                        Array.concat [ bracketContainersValue; [| { Bracket = newBracket; Selected = false } |] ]
-                        |> setBracketContainersValue
-                    )
-                    "Add"
+                MudItem'' {
+                    xs 6
+                    sm 6
+                    md 6
+                    lg 6
+                    xl 6
+                    MudStack'' {
+                        MudStack''{
+                            Row
+                            MudTextField'' {
+                                Label "Land size (m2)"
+                                InputType InputType.Number
+                                step 10
+                                Variant Variant.Filled
+                                Value landSizeValue
+                                ValueChanged setLandSizeValue
+                            }
+                        }
+                        MudStack''{
+                            Row
+                            MudTextField'' {
+                                Label "Land cost ($)"
+                                InputType InputType.Number
+                                step 100
+                                Variant Variant.Filled
+                                Value landCostValue
+                                ValueChanged setLandCostValue
+                            }
+                        }
+                        let costPerSqm = landCostValue / landSizeValue
+                        MudText'' {
+                            $"Cost per m2 ($/m2): {Math.Round(costPerSqm, 2)}"
+                        }
+                        let taxPerSqm = calculateTaxPerSqm indexWithBracketsValue costPerSqm
+                        MudText'' {
+                            $"Tax per m2 ($/m2): {Math.Round(taxPerSqm, 2)}"
+                        }
+                        MudText'' {
+                            $"Total Tax ($): {Math.Round(taxPerSqm * landSizeValue, 2)}"
+                        }
+                        MudText'' {
+                            $"Total Tax (%%): {Math.Round(taxPerSqm * landSizeValue * 100.00 / landCostValue, 2)}"
+                        }
+                    }
+                }
             }
-
-            for bracketContainer in bracketContainersValue do
-                p { $"PricePerSqmThreshold:{bracketContainer.Bracket.PricePerSqmThreshold} Rate:{bracketContainer.Bracket.Rate}" }
         }
 
