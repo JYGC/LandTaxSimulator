@@ -230,12 +230,11 @@ module ProgressiveSquareAreaCalculator =
                                     currentBracket
                                     (fun inputFromField ->
                                         let newValue =
-                                            match inputFromField with
-                                            | v when v < minimumPricePerSqmThreshold -> minimumPricePerSqmThreshold
-                                            | v when maximumPricePerSqmThreshold.IsSome &&
-                                              v > maximumPricePerSqmThreshold.Value ->
-                                                maximumPricePerSqmThreshold.Value
-                                            | v -> v
+                                            match inputFromField, maximumPricePerSqmThreshold with
+                                            | v, _ when v < minimumPricePerSqmThreshold -> minimumPricePerSqmThreshold
+                                            | v, Some maximumPricePerSqmThresholdValue when v > maximumPricePerSqmThresholdValue ->
+                                                maximumPricePerSqmThresholdValue
+                                            | v, _ -> v
                                         let changedBracket = { currentBracket with PricePerSqmThreshold = newValue }
                                         indexWithBracketsValue
                                         |> Array.map (fun ib -> snd ib)
@@ -245,10 +244,10 @@ module ProgressiveSquareAreaCalculator =
                                     )
                                     (fun inputFromField ->
                                         let newValue =
-                                            match inputFromField with
-                                            | v when v < minimumRate -> minimumRate
-                                            | v when maximumRate.IsSome && v > maximumRate.Value -> maximumRate.Value
-                                            | v -> v
+                                            match inputFromField, maximumRate with
+                                            | v, _ when v < minimumRate -> minimumRate
+                                            | v, Some maximumRateValue when v > maximumRateValue -> maximumRateValue
+                                            | v, _ -> v
                                         let changedBracket = { currentBracket with Rate = newValue }
                                         indexWithBracketsValue
                                         |> Array.map (fun ib -> snd ib)
