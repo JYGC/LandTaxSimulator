@@ -6,44 +6,44 @@ open MudBlazor
 
 module AvalePage =
     let routerView () =
-        let firstState = cval 0
-        let secondState = cval 0
-        let thridState = cval 0
-        let fourState = cval 0
-        let fithState = cval 0
-        let sixthState = cval 0
+        let firstCval = cval 0
+        let secondCval = cval 0
+        let thridCval = cval 0
+        let fourCval = cval 0
+        let fithCval = cval 0
+        let sixthCval = cval 0
         let sumAval = aval {
-            let! a = firstState
-            let! b = secondState
-            let! c = thridState
-            let! d = fourState
-            let! e = fithState
-            let! f = sixthState
+            let! a = firstCval
+            let! b = secondCval
+            let! c = thridCval
+            let! d = fourCval
+            let! e = fithCval
+            let! f = sixthCval
             return a + b + c + d + e + f
         }
         fragment {
             adapt {
-                let! first = firstState
+                let! first = firstCval
                 p { $"firstValue: {first}" }
             }
             adapt {
-                let! second = secondState
+                let! second = secondCval
                 p { $"secondValue: {second}" }
             }
             adapt {
-                let! third = thridState
+                let! third = thridCval
                 p { $"thirdValue: {third}" }
             }
             adapt {
-                let! four = fourState
+                let! four = fourCval
                 p { $"fourValue: {four}" }
             }
             adapt {
-                let! fith = fithState
+                let! fith = fithCval
                 p { $"fithValue: {fith}" }
             }
             adapt {
-                let! sixth = sixthState
+                let! sixth = sixthCval
                 p { $"fithValue: {sixth}" }
             }
             adapt {
@@ -60,7 +60,7 @@ module AvalePage =
                     xl 2
 
                     adapt {
-                        let! first, setFirst = firstState.WithSetter()
+                        let! first, setFirst = firstCval.WithSetter()
                         MudStack'' {
                             MudButton'' {
                                 OnClick (fun _ -> setFirst(first + 1))
@@ -81,7 +81,7 @@ module AvalePage =
                     lg 2
                     xl 2
                     adapt {
-                        let! second, setSecond = secondState.WithSetter()
+                        let! second, setSecond = secondCval.WithSetter()
                         MudStack'' {
                             MudButton'' {
                                 OnClick (fun _ -> setSecond(second + 1))
@@ -102,7 +102,7 @@ module AvalePage =
                     lg 2
                     xl 2
                     adapt {
-                        let! third, setThird = thridState.WithSetter()
+                        let! third, setThird = thridCval.WithSetter()
                         MudStack'' {
                             MudButton'' {
                                 OnClick (fun _ -> setThird(third + 1))
@@ -123,7 +123,7 @@ module AvalePage =
                     lg 2
                     xl 2
                     adapt {
-                        let! four, setFour = fourState.WithSetter()
+                        let! four, setFour = fourCval.WithSetter()
                         MudStack'' {
                             MudButton'' {
                                 OnClick (fun _ -> setFour(four + 1))
@@ -144,7 +144,7 @@ module AvalePage =
                     lg 2
                     xl 2
                     adapt {
-                        let! fith, setFith = fithState.WithSetter()
+                        let! fith, setFith = fithCval.WithSetter()
                         MudStack'' {
                             MudButton'' {
                                 OnClick (fun _ -> setFith(fith + 1))
@@ -165,7 +165,7 @@ module AvalePage =
                     lg 2
                     xl 2
                     adapt {
-                        let! sixth, setSixth = sixthState.WithSetter()
+                        let! sixth, setSixth = sixthCval.WithSetter()
                         MudStack'' {
                             MudButton'' {
                                 OnClick (fun _ -> setSixth(sixth + 1))
